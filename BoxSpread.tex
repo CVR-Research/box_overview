@@ -1,0 +1,402 @@
+\documentclass{article}
+\newcommand\blfootnote[1]{
+    \begingroup
+    \renewcommand\thefootnote{}\footnote{#1}
+    \addtocounter{footnote}{-1}
+    \endgroup
+}
+\usepackage{graphicx} % Required for inserting images
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{derivative}
+
+\title{Derivatives Market Implied Lend-Borrow Rate Spreads} 
+\author{
+    Nilesh Mukherji* - Instituto de Empressa\\
+    Svanik Dani* - Columbia University 
+}
+\date{April 2025}
+
+\begin{document}
+
+\maketitle
+\blfootnote{*All authors contributed equally}
+\newpage
+\tableofcontents
+\newpage
+
+\section{Introduction}
+
+The Risk-Free Rate of Return ($r_f$) is a fundamental input to the vast majority of financial models in use today. While generally $r_f$ is defined as the yield of sovereign debt (such as US T-Bills) there is always a risk of default, even within investments in sovereign debt securities.
+
+This paper aims to explore an alternative class of risk-free security which emerges from the participants of a financial markets in a certain geography. The spread between this market and sovereign debt yields has potential to indicate sovereign or financial market liquidity risk, as well as potential arbitrage opportunities in derivatives markets. 
+
+\section{The Lend-Borrow Model}
+\subsection{Introduction to Box Trades}
+A box-trade via European options is a strategy that can create a risk-free position, often referred to as a "synthetic bond." It should be noted that box-trades are taken in a single options-chains, meaning all options traded have the same underlying asset ($S$) and expiration/maturity ($T$), however, they may vary in their strike prices ($K$) and type/right (call or put). A box-trade strategy involves the following components: 
+
+\begin{enumerate}
+    \item \textbf{Long Call \& Short Put / Synthetic Long Forward / SLF} at Strike Price $K_1$: This is a synthetic long forward position at strike price $K_1$. Much like a forward or futures position is delta one, the expectation is that a SLF at strike = $K_1$, should also be delta one. Unlike a future since the investor/trader can pick the strike price, the SLF position more closely replicates a long position in the underlying with a cost-basis equal to the strike price $K_1$, which will be sold at expiration or maturity of the options $T$. Another interpretation may be an over-the-counter forward position, where the cost to enter the forward is not $0$  i.e. the forward has a strike that is different from the the forward price. 
+    
+    \item \textbf{Long Put \& Short Call / Synthetic Short Forward / SSF} at Strike Price $K_2$: This is a synthetic short forward position at strike price $K_2$. Once again due to the choice of strike price, the SSF most closely replicates a short position in the underlying with a cost-basis of $K_2$, to be closed at expiration of the options $T$. 
+\end{enumerate}
+
+By combining these positions and taking both a SLF and SSF in the same options-chain with varying strikes $K_1, K_2$, an investor can effectively create a risk-free lending or borrowing position depending on the relationship between $K_1$ and $K_2$. When the $K_1$ (the SLF) is above $K_2$ (the SSF) the trade at expiration will pay the spread between the strike prices; whereas in the inverse case the trader will collect the spread between the strike prices at expiration. Hence, box-trades on European options chains are a way to replicate a zero-coupon risk-free security.
+
+\paragraph{A note on Universe Selection:} By using European style cash settled options (mostly found on indices within the US Markets) a trader can avoid early assignment and delivery risk, safely replicating a risk-free security. Thus, for the purposes of this paper, we will limit our selection of "options" to Exchange Traded, Cash Settled European Options. Furthermore, we will assume that these positions are collateralized by the Clearing House used by the Exchange traded on, thus inheriting the counter-party credit rating of the exchange. In other scenarios it may be reasonable to relax some of these assumptions. Sophisticated trades with prime brokers may be able to settle physical underlying ensuring that all positions net at the same effective price upon expiration, which may be simple on stock options, however may become more cumbersome for physical deliver of commodities. Furthermore, sophisticated traders trading via prime brokers that are not clearing derivative trades with the clearing house may be taking on the counter party risk commiserate with the credit rating of their prime broker.  
+
+\subsection{Determining Lend or Borrow}
+\paragraph{$K_1 > K_2$ (Borrowing)}: When the strike price of the SLF ($K_1$) is higher than the strike price of the SSF, the position simulates borrowing money. The difference between $K_1$ and $K_2$, adjusted for present value (discounted), reflects the amount borrowed.
+
+\paragraph{$K_1 < K_2$ (Lending)}: Conversely, if $K_1$ is lower than $K_2$, the position simulates lending money. The difference between $K_1$ and $K_2$, adjusted for present value, reflects the amount lent.
+
+* Both of these positions and the dynamics of discounting by the risk-free rate will be shown and discussed in Section: Pricing European Settled Options.
+
+\paragraph{Loan Type:} These positions can be seen as long ($K_1 > K_2$) or short ($K_1 < K_2$) positions on zero-coupon bonds, with a single cash flow event at the point of maturity ($T$). As such, the best sovereign comparison for these instruments would be rates on securities such as treasury strips, or other zero-coupon sovereign debt instruments. Furthermore, in the same way a strip can be built into a bond, a portfolio of these positions will allow us to replicate the cash flow structures of almost any treasury product. In fact sophisticated and savvy traders may be able to find a mispricing after calculating the implied rates from a number of options chains and treasury strips and find acceptable arbitrage opportunities. 
+
+\subsection{Impact of Margin Models}
+\paragraph{Margin requirements} can impact the profitability and feasibility of box trades. Different clearinghouses and brokers may have varying margin models, which dictate how much collateral must be posted to enter and maintain these positions. These models account for factors like volatility, leverage, and counterparty risk.
+\begin{itemize}
+    \item \textbf{Initial Margin:} The upfront collateral required to open a position.
+    \item \textbf{Maintenance Margin:} The minimum equity required to keep the position open.
+\end{itemize}
+\paragraph{}Investors must consider these margins, as they affect the return on capital and the overall risk profile of the trade. However; in the case of borrowing most traders using portfolio margin accounts would see a fairly low initial margin that builds to the total value needing to be paid out at the end of the trade. In the case of lending; the trade would be placed for a net debit, resembling the amount lent.
+
+\section{Risks}
+\subsection{Overview}
+While box trades are designed to be risk-free, they are subject to certain risks:
+\begin{itemize}
+    \item \textbf{Counterparty Risk:} The risk that the other party in the trade defaults on their obligations. This risk is largely absorbed by brokers and clearing houses as they take on the form of guarantor in exchange traded options, and ultimately the exchange itself in the case of clearinghouse defaulting. A more sophisticated investor using prime brokers or other non-exchange means of trading may have more or less exposure to counterparty risk.
+
+    \item \textbf{Liquidity Risk:} The risk that the options may not be easily tradable at favorable prices. This risk is only a consideration if a trader places a trade hoping to exit before the expiration date of the options. In cases where the trader aims to replicate holding or shorting a risk-free asset to maturity this risk can be ignored. Furthermore, it should be noted that a box-spread would be a very bad replication for a trader hoping to replicate a position in a risk-free asset to be exited before maturity. Although in perfectly efficient markets this might work, a trader would likely be open to many risk linked to derivative contract pricing, namely volatility. 
+
+\end{itemize}
+
+\subsection{A Note on Global Markets} As we explore the risks of this model further, we will be analyzing risk in the context of American markets. As the home of the most liquid exchanges in the world, we believe that the market structure in the US provides a solid base for analysis, which can be expanded upon as we analyze other developed and developing markets. However, there are different structures in place across the world for clearing trades on public exchanges, as well as a variety of different capitalization requirements of investors in various geographies, regulated by the sovereign financial authorities. 
+
+\subsection{Role of the OCC (Options Clearing Corporation)}
+The OCC acts as a clearinghouse for options trades, ensuring that all parties fulfill their contractual obligations. This mitigates counterparty risk by acting as the guarantor for both sides of the trade. The OCC's role includes:
+\begin{itemize}
+    \item \textbf{Clearing and Settlement:}Ensuring that trades are accurately recorded and settled.
+    \item \textbf{Margin Requirements:}Setting and enforcing margin requirements to mitigate risk.
+    \item \textbf{Risk Management:}Monitoring the positions and financial stability of its members to prevent defaults.
+\end{itemize}
+
+\subsection{Further Analysis of Counterparty Risk in Box Spreads}
+\begin{enumerate}
+    \item \textbf{Counterparty Assurance:} Unlike U.S. Treasury bills, which are directly backed by the full faith and credit of the U.S. government, box spreads are cleared through the Options Clearing Corporation (OCC). 
+    \item \textbf{Credit Ratings:}
+        \begin{enumerate}
+            \item \textbf{U.S. Sovereign Debt:} AA+ (Stable)
+            \item \textbf{Options Clearing Corporation:} AA (Stable) These ratings indicate that the OCC’s creditworthiness is on par with U.S. government debt.
+        \end{enumerate}
+    \item \textbf{Systemic Importance:} The OCC is classified as a Systemically Important Financial Market Utility (SIFMU), implying that the Federal Reserve is likely to intervene if there are issues at the OCC.
+     \item \textbf{Historical Reliability:} The OCC has a strong track record, having successfully cleared all option transactions even during the 1987 crash and the 2008 financial crisis. There has been no instance of the OCC failing to clear an option transaction.
+    \item \textbf{Risk Management Practices:}
+    \begin{enumerate}
+        \item \textbf{Margin Requirements:} Investors must post initial and maintenance margins, ensuring the safety of options except under extreme market conditions.
+        \item \textbf{Supersenior Status:} In bankruptcy scenarios, derivatives are "supersenior" and exempt from automatic stays, allowing derivatives traders to seize collateral promptly.
+        \item \textbf{Federal Support:} The OCC's status as a SIFMU provides it access to emergency liquidity from the Federal Reserve, further reducing the risk.
+    \end{enumerate}
+\end{enumerate}
+
+The counterparty risk associated with OCC-cleared options is akin to that of U.S. government securities, supported by robust historical performance and regulatory safeguards. While no investment is entirely without risk, OCC-backed options are considered to have a very similar credit risk profile as risk-free securities.
+
+\section{Theoretical Background}
+\subsection{Overview}
+Options are financial contracts that give the owner the right but not the obligation to purchase or sell a predefined asset at a predefined price (Strike Price, noted as $K$) and time ($T$). There are two core types of options: puts and calls.
+\begin{itemize}
+    \item \textbf{Calls:} Provide their owner the right to \textbf{buy} a stock at a predefined price. Thus, they represent an inherently bullish or optimistic position on an underlying asset, due to the fact that profit opportunity arises as the price of the option's underlying security exceeds its strike price. The payoff matrix can be calculated as $P = \max(0, S_T - K)$, with $S_T$ representing the price of the underlying asset at time $T$.
+    \item \textbf{Puts:} Provide their owner the right to \textbf{sell} a stock at a predefined price. Thus, they represent an inherently bearish or pessimistic position on an underlying asset, due to the fact that profit opportunity arises as the price of the option's underlying security decreases below its strike price. The payoff matrix can be calculated as $P = \max(0, K - S_T)$.
+\end{itemize}
+
+Furthermore, options can be categorized by the times at which they can be executed. In the case of European Options, execution can only be done at Maturity ($T$). There are a variety of other types of options with various other rights given to the owner, however within the context of this paper, we will focus on European Puts and Calls. 
+
+\subsection{Relevant Variables}
+We have already mentioned two of the most relevant variables in pricing European Options: Maturity ($T$), as well as Strike Price ($K$). Others include: 
+\begin{enumerate}
+    \item \textbf{Price of the Underlying Asset ($S_t$):} The price of the underlying asset at some given time $t$ determines the degree to which the option will be profitable upon expiration, assuming no volatility in prices from time $t$ to $T$. We denote this variable as $S_t$, where $t < T$. 
+
+    \item \textbf{Volatility of Underlying Asset Price ($\sigma$):} The volatility of the underlying asset's price drives the level of uncertainty in the profit/loss of the options contract. A core assumption in traditional options pricing models is that volatility remains constant across the span $t$ to $T$, though that premise is often challenged by the behavior of markets. We denote this variable as $\sigma_t$, or just $\sigma$ should we hold volatility stable from $t$ to $T$.
+
+    \item \textbf{Risk Free Rate ($r$):} The market's risk-free rate ($R_f$) provides an important input, as the expected value of an option should be discounted back from maturity to capture the effect of the time value of money. Similar to volatility, this parameter is  held constant from $t$ to $T$ in many models. We denote this variable as $r_t$ or $r$.
+
+    \item \textbf{Dividend Rate ($q$):} The dividends that a company pays can impact it's equity valuation by reducing the price of it's equity (Cash distributed to shareholders is no longer retained on the company's balance sheet). We denote this value as $q_t$ or $q$.
+\end{enumerate}
+
+\subsection{Pricing Models}
+\paragraph{Core Assumptions:}
+For the pricing model we derive (Black Scholes Merton with Dividend Yield), we will assume that the volatility ($\sigma$), dividend yield ($q$) and risk free rate ($r$) remain constant over the remaining life of the option. We will also treat the current day as day 0 of the option position, meaning that for our calculations, $t=0$ denotes current values in the market. 
+
+\paragraph{} We will also assume the no-arbitrage principle holds true. This principle, in simple terms, assumes that there is no profit to be made in risk-free trades beyond the risk free rate. Additional return should be traded away by other market participants. Should this principle break due to market dynamics, we will have found an arbitrage, or risk-free portfolio with a present value greater than 0. 
+
+\paragraph{No-Vol Model: }Let us first imagine a magical world in which stock prices have no volatility, and a given company does not pay a dividend. Should that be the case, we can assume that:
+$$
+S_0(1+r)^{T} = S_T$$
+
+Thus, the future value of a call option can be written as 
+
+$$
+C_T = \max(0, S_0(1+r)^{T} - K)
+$$ 
+
+This is due to the premise that the asset should grow at the risk free rate given no other perturbations. However, this value represents the cash flow at time $T$, and thus would need to be discounted. That formula could be written as 
+
+$$C_0 = \frac{\max(0, S_0(1+r)^{T} - K)}{(1+r)^T}$$
+
+To simplify the discrete nature of this discounting process for our further modeling, we will assume a continuously compounding interest rate. This will allow us to work with continuous time models, simplifying our analysis substantially. Thus, our formula changes to:
+
+$$C_0 = e^{-rT}\max(0, S_0e^{rT}-K)$$
+
+Unfortunately, in the real world, there are other factors to consider. Before we tackle volatility, let us examine how to handle dividend yields. Similar to our interest rates, we model dividends as a continuously compounded payout with a yield $q$. We assume that while the asset grows continuously at a risk free rate, it depreciates continuously at the dividend yield. 
+
+$$C_0 = e^{-rT}\max(0, S_0e^{(r-q)T}-K)$$
+
+While we've been look at calls, let's also define a function to price Puts:
+
+$$P_0 = e^{-rT}\max(0, K-S_0e^{(r-q)T})$$
+
+\subsection{Put Call Parity}
+Now, while here, let's point out a quick result of these formulas. 
+$$
+\forall{r, q, K, S_0} \in [0, \infty), C_T - P_T = S_0e^{(r-q)T}-K
+$$
+
+This arrives from the intuition that if a strike price $K$ is less than $S_0e^{(r-q)T}$ - the asset grown at the risk free rate (which we will call $S_T$ for simplicity) - the value of a long call ($C_T$) and a short Put ($P_T$) at expiration is equivalent to the difference between the strike ($K$) and $S_T$, registering a gain. The mechanics of this are that you will exercise your option to buy shares from the counterparty of the call option at the strike price ($K$), and you will be able to sell these shares at the current market price, which given the volatility of 0 would be $S_T$, locking in a gain of $S_T - K$. 
+
+On the flip side, should $K$ be greater than $S_T$, the counterparty of the put option would exercise, forcing you to buy shares at $K$ and sell them at the current market price $S_T$, locking in a loss of $S_T-K$
+
+If $K = S_T$, then there is a \$0 change in your position. Mathematically, this can be expressed as:
+$$
+\forall{K} \in [0, S_0e^{(r-q)T}), C_T - P_T = 0 - (K - S_0e^{(r-q)T}) = S_0e^{(r-q)T}-K \And
+$$
+$$
+\forall{K} \in (S_0e^{(r-q)T}, \infty), C_T - P_T = S_0e^{(r-q)T}-K - 0 \And
+$$
+$$
+\text{if } K = S_0e^{(r-q)T} \quad S_0e^{(r-q)T} - S_0e^{(r-q)T} - S_0e^{(r-q)T} + S_0e^{(r-q)T} = 0
+$$
+
+Given this condition holds, we can discount both sides at the drift of the asset ($r-q$) to see that:
+
+$$
+C_0 - P_0 = (S_T - K) * e^{-(r-q)T} = S_0e^{(r-q)T - (r-q)T} - Ke^{-(r-q)T} = S_0 -  Ke^{(q-r)T}
+$$
+
+\subsubsection{Forwards:} A forward contract is a financial contract that obligates it's holder to buy (long forward) or sell (short forward) a specified asset ($S$), at a specified date (time to that date $T$), at a specified price ($K$). 
+
+We could price this asset such that the future value of the forward ($F_T$) follows the condition:
+$$
+F_T = S_T - K
+$$
+Supposing we are discussing our previously defined asset $S$, we know that $S_T = S_0e^{(r-q)T}$, thus:
+$$
+F_T = S_0e^{(r-q)T} - K = C_T - P_T
+$$
+
+Discounting both sides at asset drift ($r-q$), we find:
+
+$$
+F_0 = S_0 -  Ke^{(q-r)T} = C_0 - P_0
+$$
+
+This equivalence illustrates that a long call and short call position represents a synthetic long forward position. By multiplying both sides of this equations by $-1$, we can replicate the inverse position (a synthetic short forward):
+
+$$
+-F_0 = P_0-C_0
+$$
+
+Therefore, if we took contradicting positions in the market (a long and short synthetic forward), we can create a situation where at time T, we are obligated to buy at price $K_{\text{Long Forward}, T} = K_{1, T}$ and obligated to sell at price $K_{\text{Short Forward}, T} = K_{2, T}$:
+$$
+F_{1, T} - F_{2, T} = (C_{1, T} - P_{1, T}) + (P_{2, T} - C_{2, T}) = S_0e^{(r-q)T} - K_1 + (K_2 - S_0e^{(r-q)T})
+$$
+$$
+= K_2 - K_1
+$$
+
+Discounting this portfolio back at the risk free rate (we no longer care about the asset drift rate as it's been canceled out by our long/short exposure), we can see:
+$$
+F_{1, 0} - F_{2, 0} = K_2e^{-rT} - K_1e^{-rT} = e^{-rT}(K_2 - K_1)
+$$
+
+
+Supposing we opened this portfolio at time $t = 0$, and closed to portfolio (took the inverse portfolio) at expiration (time $t = T$), one would see the following profit/loss ($p$):
+$$
+p = FV - PV = e^{-rT}(K_2 - K_1) + -1*(K_2 - K_1) = (K_2 - K_1)(e^{-rT}-1)
+$$
+
+Should $K_2 < K_1$, we can see this is consistent with lending an amount $K_1 - K_2$ at a consistently compounding interest rate $r$:
+
+$$
+p = FV - PV = -(K_2 - K_1)(1-e^{-rT}) = (K_1 - K_2)(1-e^{-rT})
+$$
+
+At $K_1 = K_2$, $p = 0$. This is logically sound, because one would instantaneously be buying and selling the same assets. 
+
+\paragraph{Note on Forward Prices:} Within real financial markets, forwards do not have an entry cost. In other words, the value of the strike (K) is set such that $PV=0$. Given that $PV = FV*e^{-rt}$, this also implies $FV=0$ This $K$ is what we call the forward price. 
+
+We find this value of $K$ using the no-arbitrage principle. Suppose at time $t=0$, I borrow at risk free to buy a stock at $S_0$. My borrowing cost is subsidized by the dividend yield of the stock $q$. I also enter a short forward position with expiration $t=T$ and strike $K$, at a \$0 premium. 
+
+This would suppose that at time $t=T$, my portfolio has the value:
+$$
+S_T - FV(S_0) - FV(F)\\
+=S_T - S_0e^{(q-r)t} - (S_T - K) = 0
+$$
+
+Simplifying this, we can see:
+$$
+K = S_0e^{rt}
+$$
+This K is known as the forward price, and explains why there is no debt/credit spreads available using solely forwards. 
+
+\paragraph{Note on $S$:} We can clearly see through this analysis that the role of the stock price $S$ at all times $t \in [0, T]$ have no impact on the implied lend/borrow rate for our SLF/SSF portfolio. The value of $S_t$ becomes irrelevant at time $T$, leading to a simple lend/borrow model based on $K_1 \text{ and } K_2$
+
+\subsection{Introducing Volatility:} The role of volatility within this pricing model is to determine a more accurate prediction for $S_t$. Thus far, we have been assuming that $S_t$ purely grows continuously at the rate r over the lifetime of the option. However, this is clearly false if we look at financial markets. 
+
+\paragraph{}
+Firstly, we must assume that the movement of stocks follows a random pattern, with an expected change of $S_0e^{rt}$ over time t. In order to derive this, let us refer back to the no-arb principle, and introduce the concept of risk neutral pricing. 
+
+\subsubsection{Markov and Martingale Processes:}
+Suppose I have portfolio $\pi$ containing a stock ($S$) and a loan for the value of the shares at time 0, taken at risk free. My portfolio at time t would be equivalent to 
+$$
+\pi_t = \mathbb{E}(S_t) - S_0e^{rt}
+$$
+
+In this model, \(\mathbb{E}(S_t)\) represents the expected future value of a risky asset, while \(-S_0 e^{rt}\) represents a negative cash account used to finance the asset at the risk-free rate \(r\). The portfolio value, 
+
+\[
+\pi_t = \mathbb{E}(S_t) - S_0 e^{rt},
+\]
+
+reflects the deviation between the expected payoff of the risky asset and the liability incurred to finance it.\\
+
+Under the \textit{no-arbitrage principle}, the expected value of the risky asset must grow at the risk-free rate under a \textit{risk-neutral measure} \(\mathbb{Q}\), ensuring:
+
+\[
+\pi_t = 0, \quad \text{or equivalently,} \quad \mathbb{E}^\mathbb{Q}(S_t) = S_0 e^{rt}.
+\]
+
+This framework guarantees that there are no arbitrage opportunities, and the pricing of the risky asset and its liability are consistent in an arbitrage-free market.
+
+\paragraph{}
+Should $ \mathbb{E}(S_t) > S_0e^{rt}$, I could go long $\pi_0$ and sell the portfolio $\pi_t$, with a rate of return greater than $r$. Should $ \mathbb{E}(S_t) < S_0e^{rt}$, I could invert the positions for the same result.
+
+\paragraph{}
+Assume that we now add a value to $t$, $dt$, such that $dt \to 0$. 
+\[
+\mathbb{E}(S_{t+dt}) - \mathbb{E}(S_{t}) = S_0e^{r(t+dt)} - S_0e^{rt}
+\]
+\[
+= S_0e^{rt}e^{dt} - S_0e^{rt} = S_0e^{rt}(e^{rdt}-1) = \mathbb{E}(S_{t})e^{rdt} - \mathbb{E}(S_{t})
+\]
+
+Thus, $\mathbb{E}(S_{t+dt}) = \mathbb{E}(S_{t})e^{rdt}$. We can also assert that 
+$$
+\mathbb{E}(S_{t+dt} | \mathcal{F}_t) = \mathbb{E}(S_{t+dt} | S_{t})
+$$
+This indicates a Markov process, or memory-less process. This indicates that the only relevant variable to the value of $S$ at time $t+dt$ is the value at time $t$. 
+
+\paragraph{}
+Furthermore, given that the discount factor from time $t$ to time $t+dt$ is $e^{-rdt}$, we can see that the discounted stock prices, otherwise written as $PV_t(\mathbb{E}(S_t))$, follow a martingale process, such that 
+$$
+PV_t(\mathbb{E}(S_{t+dt} | \mathcal{F}_t)) = PV_t(\mathbb{E}(S_{t+dt} | S_{t})) = S_t
+$$
+\subsubsection{Random Walks:}
+We will introduce another key assumption here: assets follow a random walk. This indicates that they follow a predictable drift (the risk free rate) as shown above, but also have random perturbations. We model this using a stochastic differential equation, containing a drift term and randomness term.
+
+\paragraph{Drift Term:} The drift term is derived from the formula used earlier to capture expected value: $\mathbb{E}(S_t) = S_0 e^{rt}$. Taking the derivative of this expectation with respect to $t$, we arrive at:
+$$
+\odv{\mathbb{E}(S_{t})}{t} = r(S_0 e^{rt}) = r\mathbb{E}(S_{t})
+$$
+
+now given that at time $t$, we can observe the value of $S_t$ within our stochastic process, we can rewrite this derivative as $rS_t$. We will later prove the expectation remains valid. 
+
+\paragraph{Stochastic Term:} The stochastic term adds noise to the function. We assume the noise follows a Wiener process ($W_t$), which implies it has a mean of 0, and each time step of the process ($W_{t+1}-W_t, W_{t+2}-W_{t+1}, etc.$) is independent. Furthermore, the derivative of this process can be represented as a standard normal distribution ($\odv{W_t}{t} = \mathcal{N}(0, 1))$. We scale the derivative of this process by our volatility ($\sigma$) to represent the scale of noise present in our asset. 
+
+\paragraph{}
+Thus, 
+
+$$
+\odv{S_t}{t} = rS_t + \sigma dW, \quad dS_t = rS_tdt + \sigma dWdt
+$$
+
+We can solve this SDE using Ito's lema to arrive at:
+\[
+S_t = S_0 e^{\left(\left(r - \frac{\sigma^2}{2}\right)t + \sigma W_t\right)}
+\]
+
+\subsection{Pricing and it's Relevance:} 
+\paragraph{}
+Through the process of adding in a stochastic volatility element, we have refined our prediction of $S_t$. This will allow us to create a more accurate pricing model. However, this is not relevant to the end-to-end lend/borrow model we created. 
+
+\paragraph{}
+Furthermore, this model assumes things such as a defined and constant volatility ($\sigma$) and dividend yield ($q$). These assumptions are far from guaranteed, and are worth examination and further modeling in their own right. Models should be created to refine our predictions of these variables, and a complete price prediction model would allow for accurate prediction of intra-trade ($t \in [0, T]$) portfolio pricing. 
+
+\section{Core Areas of Research}
+
+\paragraph{}
+One primary area of investigation involves deriving implied lending and borrowing surfaces from option chains. By leveraging the variety of time frames (derived from the  expirations of the underlying options) available in these chains, one can construct a yield curve for each time frame. This systematic approach can produce loan-borrow surfaces for each underlying asset with a European-style option chain. However, it is essential to account for bid/ask spreads to ensure these surfaces are calculated using tradable prices rather than mid-prices. Sophisticated traders may refine this process by using values closer to the mid-price on one side (bid or ask) if they are confident of achieving better fills. For institutional investors and hedge funds, adjustments must also account for slippage, especially when trading in larger sizes.
+
+Trade size is a critical consideration, particularly when comparing yields between two different box spreads. For example, a trader examining the one-year option chains on SPX and QQQ may construct box spreads across both chains, revealing an apparent arbitrage opportunity based on implied rates. However, issues arise if the trader borrows \$1 million but can only lend out \$500,000. The remaining \$500,000 would still accrue interest, rendering the trade unprofitable.
+
+This challenge is less pronounced when dealing with risk-free securities, as market participants  who directly access fixed-income markets without relying on ETFs are usually large institutional players (e.g., banks, hedge funds, asset managers) . Such participants often hold substantial risk-free positions and can allocate portions to arbitrage trades. In contrast, for box spread versus box spread trades, size becomes a more significant constraint, complicating the process of systematically identifying and executing profitable opportunities.
+
+Nevertheless, sophisticated traders capable of identifying and executing such opportunities with the right broker or clearinghouse relationships can benefit from minimal margin requirements, resulting in exceptionally attractive returns on capital deployed.
+
+It is important to note that while this paper focuses on deriving and analyzing implied lending and borrowing surfaces, several critical considerations have been excluded from in-depth analysis. These include the impact of market conditions and liquidity on trading feasibility, the influence of regulatory frameworks and margin requirements, the role of transaction costs (e.g., brokerage fees and taxes), and the potential for cross-market arbitrage involving different asset classes or geographic regions. While these factors significantly affect the implementation and profitability of box spread strategies, they have been set aside for future research to maintain a focused scope in this paper.
+
+
+\section{Potential Applications and Insights from Box Spreads}
+
+\subsection{Arbitrage}
+An arbitrage is defined as a portfolio which will always have a profit/loss value greater than or equal to 0 at all future times and states of the world, indicating opportunities for risk-less profit. Below are three ways in which such a transaction could be structured.
+
+\begin{enumerate}
+    \item One could trade box spreads directly against AA rated fixed income assets (including other box spreads), attempting to capture small inefficiencies in the options or fixed income markets. This approach yields direct and functionally risk free profit opportunities. 
+
+    \item One could construct other synthetic "risk-free" (AA rated) assets via the markets. Such an approach could include shorting assets while holding a long forward or future, holding a high-yield bond and a AA rated CDS, etc. These trades are subject to the pricing and market dynamics of the synthetic securities, but could produce hypothetically risk-less profit opportunities. 
+
+    \item One could borrow via a long-term box spread in another country (and currency) where the risk-free rate is lower by a delta ($\Delta$). If the cost to hedge the currency conversion (a singular cash flow) is less than $\Delta$, the borrower effectively achieves a risk-free rate lower than the local country's rate, generating a portfolio with theoretically risk free profit opportunities.
+\end{enumerate}
+
+
+\subsection{Predicting Economic and Financial Turmoil}
+The difference between the rate of a box spread and the rate set by a government's central bank serves as a proxy for the difference in credit risk between financial participants (e.g., clearinghouses) and the government. 
+
+The credit rating of a clearinghouse relies on it's ability to effectively manage collateral for its trades, as well as the general financial health of the market participants it deals with. Given that most methods for ensuring the posting of collateral have been automated and standardized globally (with some differences subject to local regulations), the key differentiating factor across markets is the financial health of their participants (i.e. their ability to pay their end of the bargain). Given the wide number of international trading firms that are market agnostic, we can hold this to be fairly consistent. 
+
+However, the credit rating of a sovereign debt issuer is subject to that issuers' ability to manage their government's cash flows. There are a variety of macroeconomic factors that contribute, many of which fall outside the scope of this analysis. 
+
+A widening differential between these rates may act as a leading indicator of economic turmoil or an impending government default on its debt.
+
+\subsection{Carry Trades}
+The carry trade is an investment strategy in which investors borrow funds in a low-interest-rate currency (the "funding currency") and use those funds to invest in an asset or currency with a higher yield (the "target currency" or asset). The aim is to profit from the interest rate differential between the two currencies or assets, often referred to as the "carry." While typically associated with currency markets, the carry trade concept can also apply to other financial instruments, such as bonds or commodities. Academic's studying finance and economics have often claimed that such trades should not be profitable due to movement in exchange rates between the funding and target currencies, and that the trade will result in a net \$0 gain/loss. Nonetheless, practitioners have been able to find such trades and hedge against these currency movements at favorable prices making anywhere from a few basis points to a few percentage points. 
+
+Instead of hedging out cash flows on an annual or semi-annual basis in an interest rate carry trade, market participants could use box spreads to collect the risk-free rate over a given time frame as if they were placing a carry trade via a zero-coupon bond. This approach results in the need to hedge only a singular cash flow, thereby lowering the hedging requirements of carry trades. This increases the profitability of the carry trade due to the lowered cost of hedging out the currency risk. Furthermore, box spreads, if executed on margin, would likely not require market participants to post additional margin in the event that interest rates move against them. Finally, even if box spreads deviate from risk free rates by a few basis points, given a longer term carry trade the reduced cost to hedge against currency movements may still result in a more profitable trading opportunity. 
+
+\textbf{Example:} Consider the Indian Rupee (INR) risk-free rate ($R_f$) at 7\% and the U.S. Dollar (USD) risk-free rate at 4\%. An investor looking to exploit this difference could buy US T-Bills while shorting Indian Sovereign Debt, while hedging out their exposure to currency movements to profit from the difference in interest rates (financial theory states that the cost to hedge the currency risk should equal the profit from the carry trade, however this has proven to be incorrect in practice). 
+
+However, there are a variety of considerations when entering such a trade - the largest among which is matching the obligations of the short bond position to the payments of the long bond position. Should one or both of these positions be converted to a box spread lend or borrow, these calculations become significantly simplified due to the single cash-flow nature of the security (acting similar to a Zero-Coupon Bond or ZCB). 
+
+Furthermore, the introduction of a single-cash flow security significantly reduces transaction costs, as only a single cash flow needs to be hedged for currency fluctuations rather than multiple. 
+
+\subsection{Loan Products}
+In the private equity (PE) world, zero payment loans help boost valuations due to the nature of the PE Business Model (operate a business for a number of years, use cash flows to pay down debt over time, and sell at a higher multiple). A number of loan products can be constructed combining the nature of box spread securities and interest rate forwards. 
+
+\textbf{Direct Borrowing: } One example would be to derive financing directly from a box spread: One could loan from a box spread directly to acquire the necessary financing to acquire a business, funding a margin account over time to repay the balance if needed or simply paying the principle and interest at the time of maturity. 
+
+\textbf{Longer Term Borrowing Structure: } A PE Firm may want a longer financing period than one that is liquid enough to trade on public markets. A product can be structured by combining box-spreads with interest rate forwards/swaps to hedge risk. This allows for the loan to be functionally refinanced on a term that is liquid in the public markets, but provides stability to PE firms. 
+
+\section{Next Steps}
+
+Building on the insights and applications outlined in this paper, several steps are planned to further investigate and validate the potential of box spreads. The first priority is to develop an automated framework capable of generating yield curves directly from options chain data. This framework will take inputs such as chain data, trade amounts, and lending or borrowing parameters to produce precise and reliable yield curves. To ensure robustness, the system will incorporate error-checking mechanisms to validate data quality and resolve or flag any possible inconsistencies. (i.e. a large bid/ask spread) 
+
+The next phase involves benchmarking the generated yield curves from US index options chains against US Treasury risk-free rates and Treasury Strips. This comparative analysis will focus on identifying discrepancies between box spread-implied risk-free rates and those observed in the broader market. Special attention will be given to uncovering patterns of inefficiencies or arbitrage opportunities, while also evaluating how varying market conditions, such as volatility and liquidity, influence these divergences.
+
+In addition to domestic benchmarking, the scope of this analysis will be expanded to explore cross-country arbitrage and carry trade opportunities (if data is readily avalible). This will require acquiring and preprocessing options chain data from a range of international exchanges, including NSEI, B3, CME, BSE, CBOE, and the Intercontinental Exchange. Corresponding risk-free securities data for the relevant currencies and jurisdictions will also be collected to enable a comprehensive analysis of cross-border arbitrage potential. The study will specifically examine interest rate differentials, the associated costs of hedging currency exposures, and the overall impact of currency fluctuation on carry trade profitability when employing box spreads as the underlying instruments.
+
+Finally, technological solutions will be integrated to enhance the scalability and accuracy of this research. A centralized data repository will be developed to be able to consolidate and standardize information from global markets by developing an ETL process for all data sources worked with. This will be accompanied by code for visualizing yield curves and comparative analyses, thereby facilitating more informed decision-making.
+
+These steps are designed to provide a comprehensive understanding of box spreads and their practical applications across diverse financial domains. The authors are happy to consider altering the direction of the next steps after discussion with anyone who decides to sponsor this paper or research.
+
+\end{document}
