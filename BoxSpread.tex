@@ -235,17 +235,17 @@ At $K_1 = K_2$, $p = 0$. This is logically sound, because one would instantaneou
 
 \paragraph{Note on Forward Prices:} Within real financial markets, forwards do not have an entry cost. In other words, the value of the strike (K) is set such that $PV=0$. Given that $PV = FV*e^{-rt}$, this also implies $FV=0$ This $K$ is what we call the forward price. 
 
-We find this value of $K$ using the no-arbitrage principle. Suppose at time $t=0$, I borrow at risk free to buy a stock at $S_0$. My borrowing cost is subsidized by the dividend yield of the stock $q$. I also enter a short forward position with expiration $t=T$ and strike $K$, at a \$0 premium. 
+We find this value of $K$ using the no-arbitrage principle. Suppose at time $t=0$, I borrow at risk free to buy a stock at $S_0$. My borrowing cost is subsidized by the dividend yield of the stock $q$. I also enter a short forward position ($F_S$) with expiration $t=T$ and strike $K$, at a \$0 premium. 
 
 This would suppose that at time $t=T$, my portfolio has the value:
 $$
-S_T - FV(S_0) - FV(F)\\
-=S_T - S_0e^{(q-r)t} - (S_T - K) = 0
+S_T - S_0e^{(r-q)T} - FV(F)\\
+=S_T - S_0e^{(r_q)T} - (S_T - K) = 0
 $$
 
 Simplifying this, we can see:
 $$
-K = S_0e^{rt}
+K = S_0e^{(r-q)T}
 $$
 This K is known as the forward price, and explains why there is no debt/credit spreads available using solely forwards. 
 
@@ -294,7 +294,7 @@ Thus, $\mathbb{E}(S_{t+dt}) = \mathbb{E}(S_{t})e^{rdt}$. We can also assert that
 $$
 \mathbb{E}(S_{t+dt} | \mathcal{F}_t) = \mathbb{E}(S_{t+dt} | S_{t})
 $$
-This indicates a Markov process, or memory-less process. This indicates that the only relevant variable to the value of $S$ at time $t+dt$ is the value at time $t$. 
+This indicates a Markov process, or memory-less process; in other words, the only relevant variable to the value of $S$ at time $t+dt$ is the value at time $t$. 
 
 \paragraph{}
 Furthermore, given that the discount factor from time $t$ to time $t+dt$ is $e^{-rdt}$, we can see that the discounted stock prices, otherwise written as $PV_t(\mathbb{E}(S_t))$, follow a martingale process, such that 
