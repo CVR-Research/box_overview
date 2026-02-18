@@ -12,6 +12,7 @@ LIVE_DIR="${PROJECT_ROOT}/live_box_spreads"
 REQ_FILE="${LIVE_DIR}/requirements.txt"
 INGEST="${LIVE_DIR}/ingest.py"
 DASH="${LIVE_DIR}/dashboard/app.py"
+ENV_FILE="${LIVE_DIR}/.env"
 
 log() { printf "\033[1m%s\033[0m\n" "$*"; }
 
@@ -39,12 +40,18 @@ install_requirements() {
 }
 
 require_env_vars() {
-    if [[ -z "${TT_USERNAME:-}" || -z "${TT_PASSWORD:-}" ]]; then
+    if [[ -f "${ENV_FILE}" ]]; then
+        set -a
+        # shellcheck disable=SC1090
+        source "${ENV_FILE}"
+        set +a
+    fi
+    if [[ -z "${ALPACA_API_KEY:-}" || -z "${ALPACA_API_SECRET:-}" ]]; then
         cat >&2 <<EOF
-Missing TT_USERNAME or TT_PASSWORD environment variables.
+Missing ALPACA_API_KEY or ALPACA_API_SECRET environment variables.
 Export them in your shell before running this script, e.g.:
-    export TT_USERNAME="your_username"
-    export TT_PASSWORD="your_password"
+    export ALPACA_API_KEY="your_key"
+    export ALPACA_API_SECRET="your_secret"
 EOF
         exit 1
     fi

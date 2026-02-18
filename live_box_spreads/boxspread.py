@@ -124,20 +124,26 @@ class BoxSpread:
         This loader assumes the caller has pivoted bid/ask/mid into the four
         keys needed for `prices`.
         """
+        def _get(field: str):
+            try:
+                return row[field]
+            except Exception:
+                return getattr(row, field)
+
         prices = {
-            "call_kl": row["call_kl"],
-            "call_ks": row["call_ks"],
-            "put_kl": row["put_kl"],
-            "put_ks": row["put_ks"],
+            "call_kl": _get("call_kl"),
+            "call_ks": _get("call_ks"),
+            "put_kl": _get("put_kl"),
+            "put_ks": _get("put_ks"),
         }
-        return cls(row["ticker"], row["expiry"], row["kl"], row["ks"], prices, tte)
+        return cls(_get("ticker"), _get("expiry"), _get("kl"), _get("ks"), prices, tte)
 
     @classmethod
     def batch_from_snapshot(
         cls, frame: "pd.DataFrame", *, tte: float
     ) -> List["BoxSpread"]:
         """Vectorised creator: turn entire pivoted frame into objects."""
-        return [cls.from_snapshot_row(r, tte) for _, r in frame.iterrows()]
+        return [cls.from_snapshot_row(r, tte) for r in frame.itertuples(index=False)]
 
     # ----- QuantConnect loader (works only inside QC runtime) -----
     @classmethod
@@ -158,18 +164,17 @@ class BoxSpread:
         calls = {c.Strike: c for c in chain if c.Right.name == "Call"}
         puts = {p.Strike: p for p in chain if p.Right.name == "Put"}
         strikes = sorted(set(calls) & set(puts))
+        get = {
+            "bid": lambda oc: oc.BidPrice,
+            "ask": lambda oc: oc.AskPrice,
+            "mid": lambda oc: (oc.BidPrice + oc.AskPrice) / 2.0,
+        }[price_selector]
         spreads: List[BoxSpread] = []
 
         for i, kl in enumerate(strikes):
             for ks in strikes[i + 1:]:
                 c_kl, c_ks = calls[kl], calls[ks]
                 p_kl, p_ks = puts[kl], puts[ks]
-
-                get = {
-                    "bid": lambda oc: oc.BidPrice,
-                    "ask": lambda oc: oc.AskPrice,
-                    "mid": lambda oc: (oc.BidPrice + oc.AskPrice) / 2.0,
-                }[price_selector]
 
                 prices = {
                     "call_kl": get(c_kl),

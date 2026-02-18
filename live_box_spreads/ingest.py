@@ -13,8 +13,9 @@ import numpy as np
 import polars as pl
 import yaml
 
+from alpaca_stream import AlpacaStreamRunner, StreamQuoteCache
 from boxspread import BoxSpread
-from tastytrade_client import OptionQuote, TastytradeClient
+from alpaca_client import AlpacaMarketDataClient, OptionQuote
 
 LOGGER = logging.getLogger("live_box_spreads.ingest")
 YEAR_SECONDS = 365.25 * 24 * 60 * 60
@@ -60,11 +61,11 @@ def load_config(path: Path = CONFIG_PATH) -> Config:
 
 
 def ensure_env_credentials() -> tuple[str, str]:
-    username = os.environ.get("TT_USERNAME") or os.environ.get("TASTY_USERNAME")
-    password = os.environ.get("TT_PASSWORD") or os.environ.get("TASTY_PASSWORD")
-    if not username or not password:
-        raise RuntimeError("TT_USERNAME and TT_PASSWORD env vars are required")
-    return username, password
+    api_key = os.environ.get("ALPACA_API_KEY") or os.environ.get("ALPACA_API_KEY_ID")
+    api_secret = os.environ.get("ALPACA_API_SECRET") or os.environ.get("ALPACA_API_SECRET_KEY")
+    if not api_key or not api_secret:
+        raise RuntimeError("ALPACA_API_KEY and ALPACA_API_SECRET env vars are required")
+    return api_key, api_secret
 
 
 def parse_expiry(expiry: str) -> datetime:
@@ -246,7 +247,7 @@ def build_spreads(
 
 
 class SnapshotCollector:
-    def __init__(self, client: TastytradeClient, config: Config) -> None:
+    def __init__(self, client: AlpacaMarketDataClient, config: Config) -> None:
         self.client = client
         self.config = config
         self.storage_dir = (Path(__file__).parent / config.snapshot_storage).resolve()
@@ -257,7 +258,7 @@ class SnapshotCollector:
         frames: List[pl.DataFrame] = []
         for ticker in self.config.tickers:
             try:
-                expiries = self.client.get_expiries(ticker)
+                expiries = self.fetch_expiries(ticker)
             except Exception as exc:  # pragma: no cover - network
                 LOGGER.error("Failed to get expiries for %s: %s", ticker, exc)
                 continue
@@ -269,7 +270,7 @@ class SnapshotCollector:
             for expiry in expiries:
                 expiry_dt = parse_expiry(expiry)
                 try:
-                    quotes = self.client.get_option_quotes(ticker, expiry)
+                    quotes = self.fetch_quotes(ticker, expiry)
                 except Exception as exc:  # pragma: no cover
                     LOGGER.error("Failed quotes %s %s: %s", ticker, expiry, exc)
                     continue
@@ -286,6 +287,12 @@ class SnapshotCollector:
         self._prune_old_snapshots()
         LOGGER.info("Snapshot saved to %s (%d rows)", path.name, snapshot_df.height)
         return path
+
+    def fetch_expiries(self, ticker: str) -> List[str]:
+        return self.client.get_expiries(ticker)
+
+    def fetch_quotes(self, ticker: str, expiry: str) -> List[OptionQuote]:
+        return self.client.get_option_quotes(ticker, expiry)
 
     def loop(self) -> None:
         interval = max(self.config.update_interval_seconds, 5)
@@ -321,14 +328,77 @@ class SnapshotCollector:
                 continue
 
 
-def build_client() -> TastytradeClient:
-    username, password = ensure_env_credentials()
-    return TastytradeClient(username, password)
+class StreamingSnapshotCollector(SnapshotCollector):
+    def __init__(self, client: AlpacaMarketDataClient, config: Config) -> None:
+        super().__init__(client, config)
+        self._cache = StreamQuoteCache()
+        self._stream_runner: Optional[AlpacaStreamRunner] = None
+
+    def run_once(self) -> Optional[Path]:
+        if self._stream_runner is None:
+            self._prime_stream_cache()
+        return super().run_once()
+
+    def _prime_stream_cache(self) -> None:
+        snapshot_time = datetime.now(timezone.utc)
+        symbols = []
+        for ticker in self.config.tickers:
+            expiries = self._safe_expiries(ticker)
+            if not expiries:
+                continue
+            expiries = expiries[: self.config.expiries_per_ticker]
+            for expiry in expiries:
+                quotes = self._safe_quotes(ticker, expiry)
+                for quote in quotes:
+                    self._cache.update(quote)
+                    if quote.symbol:
+                        symbols.append(quote.symbol)
+        api_key, api_secret = ensure_env_credentials()
+        self._stream_runner = AlpacaStreamRunner(api_key, api_secret, symbols, self._cache)
+        self._stream_runner.start()
+        LOGGER.info("Started Alpaca stream with %d option symbols", len(symbols))
+
+    def _safe_expiries(self, ticker: str) -> List[str]:
+        try:
+            expiries = self.client.get_expiries(ticker)
+        except Exception as exc:  # pragma: no cover - network
+            LOGGER.error("Failed to get expiries for %s: %s", ticker, exc)
+            return []
+        return [e for e in expiries if e]
+
+    def _safe_quotes(self, ticker: str, expiry: str) -> List[OptionQuote]:
+        try:
+            return self.client.get_option_quotes(ticker, expiry)
+        except Exception as exc:  # pragma: no cover - network
+            LOGGER.error("Failed quotes %s %s: %s", ticker, expiry, exc)
+            return []
+
+    def get_cached_quotes(self, ticker: str, expiry: str) -> List[OptionQuote]:
+        quotes = self._cache.snapshot(ticker, expiry)
+        if quotes:
+            return quotes
+        return self._safe_quotes(ticker, expiry)
+
+    def fetch_expiries(self, ticker: str) -> List[str]:
+        return self._safe_expiries(ticker)
+
+    def fetch_quotes(self, ticker: str, expiry: str) -> List[OptionQuote]:
+        return self.get_cached_quotes(ticker, expiry)
+
+
+def build_client() -> AlpacaMarketDataClient:
+    api_key, api_secret = ensure_env_credentials()
+    return AlpacaMarketDataClient(api_key, api_secret)
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Collect live box spread snapshots")
     parser.add_argument("--loop", action="store_true", help="Continuously collect snapshots")
+    parser.add_argument(
+        "--stream",
+        action="store_true",
+        help="Use Alpaca websocket stream to keep quotes updated in real time",
+    )
     parser.add_argument(
         "--config",
         type=Path,
@@ -343,7 +413,11 @@ def main() -> None:
     args = parse_args()
     config = load_config(args.config)
     client = build_client()
-    collector = SnapshotCollector(client, config)
+    collector: SnapshotCollector
+    if args.stream:
+        collector = StreamingSnapshotCollector(client, config)
+    else:
+        collector = SnapshotCollector(client, config)
     if args.loop:
         collector.loop()
     else:
