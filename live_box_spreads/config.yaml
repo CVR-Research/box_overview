@@ -1,17 +1,10 @@
 tickers:
   - SPX
-  - XSP
-  - NDX
-  - NQX
-  - RUT
-  - RUI
   - VIX
-  - VXN
   - DJX
-  - OEX
 expiries_per_ticker: 3
-min_volume: 25
-min_open_interest: 50
+min_volume: 0
+min_open_interest: 0
 min_strike_gap: 5.0  # index points
 max_strike_gap: 400.0
 price_selector: mid
@@ -19,3 +12,4 @@ snapshot_storage: data/live_snapshots
 update_interval_seconds: 60
 max_snapshots_retained: 500
 surface_history_minutes: 30
+max_abs_rate: 1.0  # filter out absurd implied rates (>100%)

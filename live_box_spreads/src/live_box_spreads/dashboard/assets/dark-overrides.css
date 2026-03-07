@@ -1,0 +1,111 @@
+/* Dark theme overrides for Dash 4.0 components */
+
+/* --- Override Dash 4.0 CSS variables for dropdowns --- */
+:root,
+.dash-dropdown,
+.dash-dropdown-content,
+.dash-dropdown-wrapper {
+    --Dash-Fill-Inverse-Strong: #1a1a2e;       /* dropdown background */
+    --Dash-Fill-Interactive-Strong: #00d4aa;   /* focus/accent color */
+    --Dash-Fill-Interactive-Weak: #2d2d44;     /* hover background */
+    --Dash-Fill-Disabled: #12122a;
+    --Dash-Shading-Strong: #2d2d44;            /* border/stroke */
+    --Dash-Shading-Weak: #2d2d44;
+    --Dash-Stroke-Strong: #2d2d44;
+    --Dash-Text-Strong: #e0e0e0;               /* primary text */
+    --Dash-Text-Weak: #8888aa;                 /* secondary/dim text */
+    --Dash-Text-Disabled: #8888aa;             /* placeholder */
+}
+
+/* Dropdown trigger (closed state) */
+.dash-dropdown {
+    background: #1a1a2e !important;
+    border-color: #2d2d44 !important;
+    color: #e0e0e0 !important;
+}
+.dash-dropdown:focus {
+    border-color: #00d4aa !important;
+    outline-color: #00d4aa !important;
+}
+
+/* Dropdown popup content */
+.dash-dropdown-content {
+    background: #1a1a2e !important;
+    border-color: #2d2d44 !important;
+}
+
+/* Options list */
+.dash-dropdown-options {
+    background: #1a1a2e !important;
+}
+.dash-dropdown-option {
+    background: #1a1a2e !important;
+    color: #e0e0e0 !important;
+}
+.dash-dropdown-option:hover,
+.dash-dropdown-option[aria-selected="true"] {
+    background: #2d2d44 !important;
+}
+.dash-dropdown-option.dash-dropdown-option--selected {
+    background: rgba(0, 212, 170, 0.15) !important;
+    color: #00d4aa !important;
+}
+
+/* Search box inside dropdown */
+.dash-dropdown-search-container {
+    background: #12122a !important;
+    border-color: #2d2d44 !important;
+}
+.dash-dropdown-search {
+    background: transparent !important;
+    color: #e0e0e0 !important;
+}
+
+/* Placeholder text */
+.dash-dropdown-placeholder {
+    color: #8888aa !important;
+}
+
+/* Value text */
+.dash-dropdown-value,
+.dash-dropdown-value-item {
+    color: #e0e0e0 !important;
+}
+
+/* Dropdown wrapper (the outer shell) */
+.dash-dropdown-wrapper {
+    background: #1a1a2e !important;
+    border-color: #2d2d44 !important;
+}
+
+/* Icons (chevron, clear) */
+.dash-dropdown-trigger-icon,
+.dash-dropdown-value-count {
+    color: #8888aa !important;
+    fill: #8888aa !important;
+}
+.dash-dropdown-clear { color: #8888aa !important; }
+
+/* --- Range slider --- */
+.rc-slider-track { background-color: #00d4aa !important; }
+.rc-slider-handle {
+    border-color: #00d4aa !important;
+    background-color: #1a1a2e !important;
+}
+.rc-slider-rail { background-color: #2d2d44 !important; }
+.rc-slider-dot {
+    background-color: #2d2d44 !important;
+    border-color: #2d2d44 !important;
+}
+.rc-slider-mark-text { color: #8888aa !important; }
+
+/* --- Number inputs (dbc.Input) --- */
+input[type=number] {
+    background-color: #1a1a2e !important;
+    color: #e0e0e0 !important;
+    border-color: #2d2d44 !important;
+}
+input[type=number]:focus {
+    border-color: #00d4aa !important;
+    box-shadow: none !important;
+}

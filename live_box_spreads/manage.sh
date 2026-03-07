@@ -1,18 +1,12 @@
 #!/usr/bin/env bash
-# Helper script to ensure the Conda env exists, install deps, verify env vars,
-# and launch either the snapshot collector or the dashboard (or both).
+# Helper script to set up the environment and launch the box spread monitor.
 
 set -euo pipefail
 
 ENV_NAME="box_live"
 PY_VERSION="3.11"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-LIVE_DIR="${PROJECT_ROOT}/live_box_spreads"
-REQ_FILE="${LIVE_DIR}/requirements.txt"
-INGEST="${LIVE_DIR}/ingest.py"
-DASH="${LIVE_DIR}/dashboard/app.py"
-ENV_FILE="${LIVE_DIR}/.env"
+ENV_FILE="${SCRIPT_DIR}/.env"
 
 log() { printf "\033[1m%s\033[0m\n" "$*"; }
 
@@ -28,15 +22,15 @@ ensure_env() {
     if conda info --envs | awk '{print $1}' | grep -qx "${ENV_NAME}"; then
         log "Conda env ${ENV_NAME} already exists."
     else
-        log "Creating conda env ${ENV_NAME} (python ${PY_VERSION})…"
+        log "Creating conda env ${ENV_NAME} (python ${PY_VERSION})..."
         conda create -y -n "${ENV_NAME}" "python=${PY_VERSION}"
     fi
 }
 
-install_requirements() {
-    log "Installing/upgrading project requirements inside ${ENV_NAME}…"
+install_package() {
+    log "Installing package (editable) inside ${ENV_NAME}..."
     conda run -n "${ENV_NAME}" python -m pip install --upgrade pip >/dev/null
-    conda run -n "${ENV_NAME}" python -m pip install -r "${REQ_FILE}"
+    conda run -n "${ENV_NAME}" python -m pip install -e "${SCRIPT_DIR}[dev]"
 }
 
 require_env_vars() {
@@ -49,7 +43,7 @@ require_env_vars() {
     if [[ -z "${ALPACA_API_KEY:-}" || -z "${ALPACA_API_SECRET:-}" ]]; then
         cat >&2 <<EOF
 Missing ALPACA_API_KEY or ALPACA_API_SECRET environment variables.
-Export them in your shell before running this script, e.g.:
+Export them in your shell or add them to .env, e.g.:
     export ALPACA_API_KEY="your_key"
     export ALPACA_API_SECRET="your_secret"
 EOF
@@ -61,22 +55,27 @@ run_choice() {
     printf "\nChoose an action:\n"
     printf "  1) Collect a single snapshot\n"
     printf "  2) Start continuous collector (--loop)\n"
-    printf "  3) Launch dashboard (expects snapshots already)\n"
+    printf "  3) Launch dashboard (snapshot mode)\n"
     printf "  4) Run collector (--loop) + dashboard together\n"
-    printf "Select [1-4]: "
+    printf "  5) Launch dashboard (stream mode)\n"
+    printf "Select [1-5]: "
     read -r choice
     case "${choice}" in
-        1) conda run -n "${ENV_NAME}" python "${INGEST}" ;;
-        2) conda run -n "${ENV_NAME}" python "${INGEST}" --loop ;;
-        3) conda run -n "${ENV_NAME}" python "${DASH}" ;;
+        1) conda run -n "${ENV_NAME}" boxmon ingest --config "${SCRIPT_DIR}/config.yaml" ;;
+        2) conda run -n "${ENV_NAME}" boxmon ingest --loop --config "${SCRIPT_DIR}/config.yaml" ;;
+        3) conda run -n "${ENV_NAME}" boxmon dashboard --config "${SCRIPT_DIR}/config.yaml" ;;
         4)
-            log "Starting collector in background…"
-            conda run -n "${ENV_NAME}" python "${INGEST}" --loop &
+            log "Starting collector in background..."
+            conda run -n "${ENV_NAME}" boxmon ingest --loop --config "${SCRIPT_DIR}/config.yaml" &
             COL_PID=$!
             trap 'kill ${COL_PID} 2>/dev/null || true' EXIT INT TERM
             sleep 2
-            log "Launching dashboard…"
-            conda run -n "${ENV_NAME}" python "${DASH}"
+            log "Launching dashboard..."
+            conda run -n "${ENV_NAME}" boxmon dashboard --config "${SCRIPT_DIR}/config.yaml"
+            ;;
+        5)
+            log "Launching dashboard (stream mode)..."
+            conda run -n "${ENV_NAME}" boxmon dashboard --stream --config "${SCRIPT_DIR}/config.yaml"
             ;;
         *)
             echo "Invalid choice." >&2
@@ -87,6 +86,6 @@ run_choice() {
 
 require_conda
 ensure_env
-install_requirements
+install_package
 require_env_vars
 run_choice
